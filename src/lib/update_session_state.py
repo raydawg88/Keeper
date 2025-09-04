@@ -21,10 +21,10 @@ def update_development_state(feature_completed=None, next_priority=None, notes=N
     
     # Read current state
     try:
-        with open('DEVELOPMENT_STATE.md', 'r') as f:
+        with open('docs/DEVELOPMENT_STATE.md', 'r') as f:
             content = f.read()
     except FileNotFoundError:
-        print("❌ DEVELOPMENT_STATE.md not found")
+        print("❌ docs/DEVELOPMENT_STATE.md not found")
         return
     
     # Update timestamp
@@ -52,7 +52,7 @@ def update_development_state(feature_completed=None, next_priority=None, notes=N
         lines.insert(insert_index, handoff_section)
     
     # Write updated content
-    with open('DEVELOPMENT_STATE.md', 'w') as f:
+    with open('docs/DEVELOPMENT_STATE.md', 'w') as f:
         f.write('\n'.join(lines))
     
     print(f"✅ Updated DEVELOPMENT_STATE.md")
