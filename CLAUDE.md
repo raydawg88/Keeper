@@ -1,0 +1,36 @@
+# Claude Development Rules for Keeper
+
+## Core Development Philosophy
+
+**Never do the quick thing, always think through the problem, come up with the best solution, then execute, this way we don't keep making fixes over and over again, we spend the time thinking through all the angles before we fix the problem.**
+
+## Additional Rules
+
+1. **Always hide credentials from public view** - Never commit or display sensitive information
+2. **Use read-only permissions when possible** - We don't need to write anything to external services, just read data
+3. **Update GitHub when finishing something** - Always commit work when a feature is complete
+4. **When we mark a task as completed ALWAYS update github** - This is a strict rule, no exceptions
+5. **Grab latest documentation** - For any service we use, get the most recent documentation to avoid outdated patterns
+5. **Verify connection and authentication** - Test basic connectivity before building complex features
+6. **Follow existing code patterns** - Look at how the codebase already handles similar functionality
+7. **Build incrementally** - Create simple working versions first, then enhance with advanced features
+8. **Include proper error handling** - Account for API failures, rate limits, and edge cases
+9. **Log progress for long operations** - Show users what's happening during data syncs and migrations
+10. **Create reusable components** - Build utilities that can be used across the application
+
+## Data Sync Guidelines
+
+- Always implement rate limiting for external APIs
+- Use pagination for large datasets
+- Include retry logic with exponential backoff
+- Validate data before inserting into database
+- Track sync status and provide meaningful error messages
+- Support incremental syncs to avoid reprocessing all data
+
+## Testing Requirements
+
+- Test with sandbox data before production
+- Verify edge cases (empty responses, API errors, network failures)
+- Validate data transformations
+- Test rate limiting and retry mechanisms
+- Ensure proper cleanup of test data
