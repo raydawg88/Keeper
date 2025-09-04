@@ -13,8 +13,8 @@ def main():
     print("🔐 Keeper Square OAuth Flow Test")
     print("=" * 45)
     
-    # Test OAuth URL generation
-    redirect_uri = "https://keeper.tools/auth/callback"
+    # Test OAuth URL generation - using localhost for immediate testing
+    redirect_uri = "http://localhost:8000/callback"
     business_name = "Test Business"
     
     print(f"📋 Testing OAuth URL generation...")

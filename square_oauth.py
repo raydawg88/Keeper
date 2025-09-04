@@ -29,11 +29,13 @@ class SquareOAuthManager:
         supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
         self.supabase: Client = create_client(supabase_url, supabase_key)
         
-        # OAuth endpoints
+        # OAuth endpoints - Use connect.squareupsandbox.com for both
         if self.environment == 'sandbox':
             self.oauth_base_url = 'https://connect.squareupsandbox.com'
+            self.api_base_url = 'https://connect.squareupsandbox.com'
         else:
             self.oauth_base_url = 'https://connect.squareup.com'
+            self.api_base_url = 'https://connect.squareup.com'
     
     def generate_oauth_url(self, redirect_uri, business_name=None):
         """
@@ -68,13 +70,17 @@ class SquareOAuthManager:
             print(f"❌ Failed to store OAuth session: {e}")
             return None
         
-        # Build authorization URL
+        # Build authorization URL - include redirect_uri explicitly
         params = {
             'client_id': self.client_id,
             'scope': 'CUSTOMERS_READ CUSTOMERS_WRITE PAYMENTS_READ ITEMS_READ',
-            'session': 'false',
-            'state': state
+            'state': state,
+            'redirect_uri': redirect_uri
         }
+        
+        # Only add session parameter for production
+        if self.environment == 'production':
+            params['session'] = 'false'
         
         auth_url = f"{self.oauth_base_url}/oauth2/authorize?" + urllib.parse.urlencode(params)
         
@@ -120,7 +126,7 @@ class SquareOAuthManager:
             return None
         
         # Exchange authorization code for access token
-        token_url = f"{self.oauth_base_url}/oauth2/token"
+        token_url = f"{self.api_base_url}/oauth2/token"
         token_data = {
             'client_id': self.client_id,
             'client_secret': self.client_secret,
@@ -206,10 +212,7 @@ class SquareOAuthManager:
         Returns:
             dict: Merchant information or None if failed
         """
-        if self.environment == 'sandbox':
-            base_url = 'https://connect.squareupsandbox.com'
-        else:
-            base_url = 'https://connect.squareup.com'
+        base_url = self.api_base_url
         
         headers = {
             'Authorization': f'Bearer {access_token}',
@@ -271,7 +274,7 @@ class SquareOAuthManager:
                 return False
             
             # Refresh token
-            token_url = f"{self.oauth_base_url}/oauth2/token"
+            token_url = f"{self.api_base_url}/oauth2/token"
             token_data = {
                 'client_id': self.client_id,
                 'client_secret': self.client_secret,
