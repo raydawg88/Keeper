@@ -10,6 +10,15 @@
 
 ## 📋 Core Philosophy & Rules
 
+### **Documentation First Rule** ⚠️ CRITICAL
+**ALWAYS verify current documentation before implementing ANY external service integration**
+- Use WebFetch to get the latest docs from official sources
+- Never assume API endpoints, parameters, or formats from memory or old examples  
+- OAuth endpoints, database schemas, API versions change frequently
+- Spend 5 minutes verifying docs to save hours debugging outdated implementations
+- **Examples that failed us**: Square OAuth endpoint casing, parameter requirements
+- **Rule**: When integrating any service (Square, Supabase, OpenAI, etc.), first fetch current docs
+
 ### **BMAD Methodology**
 - **Build** small increments
 - **Measure** with real data  
@@ -242,25 +251,49 @@ test-data/
 ### **🎪 Ready to Build**
 All foundations are in place. The next Claude session can immediately continue from the Square OAuth integration development.
 
+## 📚 Current API Documentation Status (Updated 2025-09-03)
+
+### **Square API (v2025-08-20)**
+- ⚠️ **Breaking Change**: Customer `cards` field retired - use `ListCards` endpoint  
+- **Rate Limits**: ~10 QPS with exponential backoff for 429 errors
+- **Current Integration**: Test account connected with token `EAAAly9q...`
+- **Account**: 27d755f9-87fd-40e8-a541-3a0478816395 (Default Test Account)
+
+### **Supabase (2024-2025)**
+- **Performance**: RLS policies require proper indexing for large datasets
+- **Real-time**: Channel-based subscriptions for live updates
+- **Current Schema**: All OAuth columns added, accounts table ready
+
+### **OpenAI API (2024-2025)**
+- **Latest Embeddings**: text-embedding-3-large (3,072 dimensions) for 97%+ matching
+- **Cost Optimization**: Batch API offers 50% discount for bulk processing
+- **GPT Models**: GPT-4.1 series for superior code generation
+
+### **FastAPI (2024-2025)**
+- **Async Patterns**: Never block event loop in async routes
+- **Real-time**: Native WebSocket support for dashboard updates
+- **Background Tasks**: Built-in for lightweight operations
+
 ## 🚨 Important Notes for Future Claude Sessions
 
 ### **Context Restoration**
 This project has extensive documentation:
 - Complete technical specifications in 16 .md files
 - All environment variables configured in .env (not committed)
-- Database schema already created and tested
-- All API integrations verified and working
+- Database schema updated with OAuth columns
+- Square test account successfully connected
 
 ### **Development Continuity**
-- Ray will provide spa's Square account for real testing
 - Use BMAD methodology - build small, test with real data
-- Commit frequently due to usage limit constraints
+- Commit frequently due to usage limit constraints  
 - Focus on finding actual $3000+ revenue opportunities
+- **Always fetch latest documentation** before implementing integrations
 
 ### **Key Passwords/Credentials Location**
-- All credentials stored in .env file (gitignored)  
-- Supabase project: keeper-prod
+- All credentials stored in .env file (gitignored)
+- Supabase project: keeper-prod  
 - Square app: "Keeper" (sandbox environment)
+- Test Account ID: 27d755f9-87fd-40e8-a541-3a0478816395
 - Domain: keeper.tools (recently purchased)
 
 ---
