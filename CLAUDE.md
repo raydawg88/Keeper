@@ -10,7 +10,7 @@
 2. **Use read-only permissions when possible** - We don't need to write anything to external services, just read data
 3. **Update GitHub when finishing something** - Always commit work when a feature is complete
 4. **When we mark a task as completed ALWAYS update github** - This is a strict rule, no exceptions
-5. **Grab latest documentation** - For any service we use, get the most recent documentation to avoid outdated patterns
+5. **ALWAYS read the latest official documentation** - For ANY service we use to build Keeper, ALWAYS read the latest official documentation first before making assumptions or implementing solutions. Never assume API behavior - verify with current docs.
 5. **Verify connection and authentication** - Test basic connectivity before building complex features
 6. **Follow existing code patterns** - Look at how the codebase already handles similar functionality
 7. **Build incrementally** - Create simple working versions first, then enhance with advanced features

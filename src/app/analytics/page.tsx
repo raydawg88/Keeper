@@ -13,10 +13,15 @@ interface AnalyticsData {
   totalRevenue: number;
   totalTransactions: number;
   totalCustomers: number;
+  totalAppointments: number;
   averageTransaction: number;
-  yearlyRevenue: Array<{ year: number; revenue: number; transactions: number }>;
-  monthlyRevenue: Array<{ month: string; revenue: number; transactions: number }>;
+  appointmentConversionRate: number;
+  yearlyRevenue: Array<{ year: number; revenue: number; transactions: number; appointments: number }>;
+  monthlyRevenue: Array<{ month: string; revenue: number; transactions: number; appointments: number }>;
+  appointmentsByStatus: Array<{ status: string; count: number; percentage: number }>;
+  averageAppointmentDuration: number;
   recentTransactions: Array<{ amount: number; created_at: string }>;
+  recentAppointments: Array<{ start_at: string; status: string; duration_minutes: number }>;
 }
 
 export default function Analytics() {
@@ -40,7 +45,9 @@ export default function Analytics() {
 
       let totalRevenue = 0;
       let totalTransactions = 0;
+      let totalAppointments = 0;
       let avgTransaction = 0;
+      let appointmentConversionRate = 0;
 
       if (aggregatedError) {
         console.log('RPC not available, using fallback calculation...');
@@ -100,6 +107,61 @@ export default function Analytics() {
         throw customersError;
       }
 
+      // Get appointment analytics
+      const { count: appointmentCount, error: appointmentError } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true });
+
+      if (appointmentError) {
+        console.log('Appointments table not available yet:', appointmentError.message);
+        totalAppointments = 0;
+      } else {
+        totalAppointments = appointmentCount || 0;
+        appointmentConversionRate = totalTransactions > 0 && totalAppointments > 0
+          ? (totalTransactions / totalAppointments) * 100
+          : 0;
+      }
+
+      // Get appointment status breakdown
+      const { data: appointmentStatusData, error: statusError } = await supabase
+        .from('appointments')
+        .select('status')
+        .limit(10000); // Sample for status analysis
+
+      let appointmentsByStatus: Array<{ status: string; count: number; percentage: number }> = [];
+      let averageAppointmentDuration = 0;
+
+      if (!statusError && appointmentStatusData) {
+        const statusCounts: { [key: string]: number } = {};
+        appointmentStatusData.forEach(apt => {
+          const status = apt.status || 'unknown';
+          statusCounts[status] = (statusCounts[status] || 0) + 1;
+        });
+
+        const totalSample = appointmentStatusData.length;
+        appointmentsByStatus = Object.entries(statusCounts).map(([status, count]) => ({
+          status,
+          count,
+          percentage: totalSample > 0 ? (count / totalSample) * 100 : 0
+        })).sort((a, b) => b.count - a.count);
+      }
+
+      // Get average appointment duration
+      const { data: durationData, error: durationError } = await supabase
+        .from('appointments')
+        .select('duration_minutes')
+        .limit(1000); // Sample for duration analysis
+
+      if (!durationError && durationData) {
+        const validDurations = durationData
+          .map(apt => apt.duration_minutes)
+          .filter(duration => duration && duration > 0);
+        
+        if (validDurations.length > 0) {
+          averageAppointmentDuration = validDurations.reduce((sum, duration) => sum + duration, 0) / validDurations.length;
+        }
+      }
+
       // Get transactions for trending (limit to recent data for performance)
       const { data: transactions, error: transactionsError } = await supabase
         .from('transactions')
@@ -111,22 +173,38 @@ export default function Analytics() {
         throw transactionsError;
       }
 
+      // Get appointments for trending
+      const { data: appointments, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select('start_at, status, duration_minutes')
+        .order('start_at', { ascending: false })
+        .limit(10000); // Get recent 10k for trending analysis
+
+      if (appointmentsError) {
+        console.log('Could not fetch appointments for trending:', appointmentsError.message);
+      }
+
       if (totalTransactions === 0) {
         setData({
           totalRevenue: 0,
           totalTransactions: 0,
           totalCustomers: customerCount || 0,
+          totalAppointments: totalAppointments,
           averageTransaction: 0,
+          appointmentConversionRate: 0,
           yearlyRevenue: [],
           monthlyRevenue: [],
-          recentTransactions: []
+          appointmentsByStatus: [],
+          averageAppointmentDuration: 0,
+          recentTransactions: [],
+          recentAppointments: []
         });
         return;
       }
 
       // Group by year
-      const yearlyData: { [key: number]: { revenue: number; transactions: number } } = {};
-      const monthlyData: { [key: string]: { revenue: number; transactions: number } } = {};
+      const yearlyData: { [key: number]: { revenue: number; transactions: number; appointments: number } } = {};
+      const monthlyData: { [key: string]: { revenue: number; transactions: number; appointments: number } } = {};
 
       transactions.forEach(transaction => {
         const date = new Date(transaction.created_at);
@@ -135,25 +213,47 @@ export default function Analytics() {
 
         // Yearly aggregation
         if (!yearlyData[year]) {
-          yearlyData[year] = { revenue: 0, transactions: 0 };
+          yearlyData[year] = { revenue: 0, transactions: 0, appointments: 0 };
         }
         yearlyData[year].revenue += transaction.amount || 0;
         yearlyData[year].transactions += 1;
 
         // Monthly aggregation (last 12 months)
         if (!monthlyData[monthKey]) {
-          monthlyData[monthKey] = { revenue: 0, transactions: 0 };
+          monthlyData[monthKey] = { revenue: 0, transactions: 0, appointments: 0 };
         }
         monthlyData[monthKey].revenue += transaction.amount || 0;
         monthlyData[monthKey].transactions += 1;
       });
+
+      // Add appointment data to yearly/monthly aggregation
+      if (appointments) {
+        appointments.forEach(appointment => {
+          const date = new Date(appointment.start_at);
+          const year = date.getFullYear();
+          const monthKey = `${year}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+
+          // Yearly aggregation
+          if (!yearlyData[year]) {
+            yearlyData[year] = { revenue: 0, transactions: 0, appointments: 0 };
+          }
+          yearlyData[year].appointments += 1;
+
+          // Monthly aggregation
+          if (!monthlyData[monthKey]) {
+            monthlyData[monthKey] = { revenue: 0, transactions: 0, appointments: 0 };
+          }
+          monthlyData[monthKey].appointments += 1;
+        });
+      }
 
       // Convert to arrays and sort
       const yearlyRevenue = Object.entries(yearlyData)
         .map(([year, data]) => ({
           year: parseInt(year),
           revenue: data.revenue,
-          transactions: data.transactions
+          transactions: data.transactions,
+          appointments: data.appointments
         }))
         .sort((a, b) => a.year - b.year);
 
@@ -161,7 +261,8 @@ export default function Analytics() {
         .map(([month, data]) => ({
           month,
           revenue: data.revenue,
-          transactions: data.transactions
+          transactions: data.transactions,
+          appointments: data.appointments
         }))
         .sort((a, b) => a.month.localeCompare(b.month))
         .slice(-12); // Last 12 months
@@ -172,14 +273,26 @@ export default function Analytics() {
         created_at: t.created_at
       }));
 
+      // Recent appointments
+      const recentAppointments = appointments ? appointments.slice(0, 10).map(apt => ({
+        start_at: apt.start_at,
+        status: apt.status || 'unknown',
+        duration_minutes: apt.duration_minutes || 60
+      })) : [];
+
       setData({
         totalRevenue,
         totalTransactions,
         totalCustomers: customerCount || 0,
+        totalAppointments,
         averageTransaction: avgTransaction,
+        appointmentConversionRate,
         yearlyRevenue,
         monthlyRevenue,
-        recentTransactions
+        appointmentsByStatus,
+        averageAppointmentDuration,
+        recentTransactions,
+        recentAppointments
       });
 
     } catch (error) {
@@ -258,7 +371,7 @@ export default function Analytics() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <div className="text-3xl font-bold text-green-600 mb-2">
               {formatCurrency(data.totalRevenue)}
@@ -282,6 +395,16 @@ export default function Analytics() {
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <div className="text-3xl font-bold text-pink-600 mb-2">
+              {data.totalAppointments.toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600">Total Appointments</div>
+            <div className="text-xs text-gray-500 mt-1">
+              {data.appointmentConversionRate.toFixed(1)}% conversion rate
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <div className="text-3xl font-bold text-purple-600 mb-2">
               {data.totalCustomers.toLocaleString()}
             </div>
@@ -290,7 +413,10 @@ export default function Analytics() {
               Active customer base
             </div>
           </div>
+        </div>
 
+        {/* Service Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="bg-white rounded-lg shadow-md p-6 text-center">
             <div className="text-3xl font-bold text-orange-600 mb-2">
               {formatCurrency(data.averageTransaction)}
@@ -298,6 +424,26 @@ export default function Analytics() {
             <div className="text-sm text-gray-600">Average Transaction</div>
             <div className="text-xs text-gray-500 mt-1">
               Per service visit
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <div className="text-3xl font-bold text-teal-600 mb-2">
+              {Math.round(data.averageAppointmentDuration)}m
+            </div>
+            <div className="text-sm text-gray-600">Average Session</div>
+            <div className="text-xs text-gray-500 mt-1">
+              Service duration
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <div className="text-3xl font-bold text-indigo-600 mb-2">
+              {Math.round(data.totalAppointments / (data.yearlyRevenue.length * 365))}
+            </div>
+            <div className="text-sm text-gray-600">Appointments/Day</div>
+            <div className="text-xs text-gray-500 mt-1">
+              8-year average
             </div>
           </div>
         </div>
@@ -321,6 +467,11 @@ export default function Analytics() {
                   <div className="text-sm text-gray-600">
                     {year.transactions.toLocaleString()} transactions
                   </div>
+                  {year.appointments > 0 && (
+                    <div className="text-xs text-pink-600 mt-1">
+                      📅 {year.appointments.toLocaleString()} appointments
+                    </div>
+                  )}
                   {previousYear && (
                     <div className={`text-xs mt-1 ${yearGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                       {yearGrowth >= 0 ? '↗' : '↘'} {Math.abs(yearGrowth).toFixed(0)}% vs prev year
@@ -344,14 +495,82 @@ export default function Analytics() {
                 </div>
                 <div className="text-xs text-gray-500">
                   {month.transactions} transactions
+                  {month.appointments > 0 && (
+                    <span className="text-pink-600"> • {month.appointments} appointments</span>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
 
+        {/* Appointment Analytics */}
+        {data.appointmentsByStatus.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Appointment Status Breakdown */}
+            <div className="bg-white rounded-lg shadow-md p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">📊 Appointment Status</h2>
+              <div className="space-y-3">
+                {data.appointmentsByStatus.slice(0, 6).map((status, index) => (
+                  <div key={index} className="flex justify-between items-center py-2">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full mr-3" 
+                           style={{ 
+                             backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'][index % 6] 
+                           }}>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700 capitalize">
+                        {status.status.replace(/_/g, ' ').toLowerCase()}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-semibold text-gray-900">
+                        {status.count.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {status.percentage.toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Appointments */}
+            <div className="bg-white rounded-lg shadow-md p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">📅 Recent Appointments</h2>
+              <div className="space-y-3">
+                {data.recentAppointments.slice(0, 8).map((appointment, index) => (
+                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 capitalize">
+                        {appointment.status.replace(/_/g, ' ').toLowerCase()}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {appointment.duration_minutes} minutes
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-gray-700">
+                        {formatDate(appointment.start_at)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(appointment.start_at).toLocaleTimeString('en-US', { 
+                          hour: 'numeric', 
+                          minute: '2-digit',
+                          hour12: true 
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Recent Transactions */}
-        <div className="bg-white rounded-lg shadow-md p-8">
+        <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">💳 Recent Transactions</h2>
           <div className="space-y-3">
             {data.recentTransactions.map((transaction, index) => (
@@ -377,16 +596,16 @@ export default function Analytics() {
                 <li>• {growthRate.toFixed(0)}% total revenue growth over 8 years</li>
                 <li>• Average {formatCurrency(data.totalRevenue / data.yearlyRevenue.length)} annual revenue</li>
                 <li>• Strong customer base of {data.totalCustomers.toLocaleString()} clients</li>
-                <li>• Consistent {formatCurrency(data.averageTransaction)} average transaction value</li>
+                <li>• {data.totalAppointments.toLocaleString()} total appointments scheduled</li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold text-gray-800 mb-2">Operational Metrics</h3>
               <ul className="text-sm text-gray-600 space-y-1">
-                <li>• {Math.round(data.totalTransactions / (data.yearlyRevenue.length * 365))} transactions per day</li>
-                <li>• Peak performance in recent years</li>
-                <li>• Stable service pricing and customer retention</li>
-                <li>• Ready for advanced customer segmentation analysis</li>
+                <li>• {Math.round(data.totalTransactions / (data.yearlyRevenue.length * 365))} transactions per day average</li>
+                <li>• {Math.round(data.totalAppointments / (data.yearlyRevenue.length * 365))} appointments per day average</li>
+                <li>• {data.appointmentConversionRate.toFixed(1)}% appointment-to-transaction conversion rate</li>
+                <li>• Average {Math.round(data.averageAppointmentDuration)} minute service sessions</li>
               </ul>
             </div>
           </div>
