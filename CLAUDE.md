@@ -42,3 +42,14 @@
 - MCP tools provide better error handling and optimized performance compared to direct API calls
 - Leverage MCP pagination and rate limiting features for large datasets
 - Use MCP tools for complex data transformations and bulk operations
+
+## Keeper Advanced Insight Engine
+
+- **Reference Architecture:** The advanced insight engine is based on the proven tournament system from [DropSet](https://github.com/raydawg88/DropSet)
+- **20-Round Progressive Analysis:** Foundation → Advanced AI → Intelligence Mastery → Complete Intelligence rounds
+- **30+ AI Models:** Random Forest, LSTM, Transformers, Ensemble Methods, Bayesian Networks, XGBoost, and more
+- **Tournament System:** Multiple models compete to find the most valuable insights, similar to DropSet's approach
+- **Golden Nuggets:** Each insight must have dollar value, confidence score, implementation plan, and evidence
+- **Target Performance:** Generate $3,000+ in actionable revenue opportunities with 80%+ average confidence
+- **Universal Business Focus:** Adapted from gym member churn prediction to universal business optimization for all Square-powered businesses (restaurants, retail, services, salons, fitness, etc.)
+- **Multi-Platform Future:** Designed to expand beyond Square to Clover, QuickBooks, and other business management platforms
