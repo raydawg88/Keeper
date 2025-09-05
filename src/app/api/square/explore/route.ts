@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     console.log('🔍 Starting Square data exploration...');
     
-    const explorer = new SquareDataExplorer(accessToken, 'sandbox');
+    const explorer = new SquareDataExplorer(accessToken, 'production');
     const allData = await explorer.exploreAll();
 
     return NextResponse.json({
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const explorer = new SquareDataExplorer(access_token, 'sandbox');
+    const explorer = new SquareDataExplorer(access_token, 'production');
     
     let result;
     switch (entity_type) {

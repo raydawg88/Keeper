@@ -4,9 +4,11 @@ import { SquareOAuthManager } from '@/lib/square_oauth'
 // Simple in-memory cache to prevent duplicate processing
 const processedCodes = new Set<string>()
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { code, state } = await req.json()
+    const { searchParams } = new URL(req.url)
+    const code = searchParams.get('code')
+    const state = searchParams.get('state')
     
     console.log('=== CALLBACK DEBUG ===')
     console.log('Received code:', code ? code.substring(0, 20) + '...' : 'MISSING')

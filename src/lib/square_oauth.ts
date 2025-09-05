@@ -26,7 +26,7 @@ export class SquareOAuthManager {
   constructor() {
     this.clientId = process.env.SQUARE_APPLICATION_ID || '';
     this.clientSecret = process.env.SQUARE_CLIENT_SECRET || '';
-    this.environment = 'sandbox'; // Change to 'production' when ready
+    this.environment = 'production'; // Now using production for real spa data
     
     if (this.environment === 'sandbox') {
       this.oauthBaseUrl = 'https://connect.squareupsandbox.com';
