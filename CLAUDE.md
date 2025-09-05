@@ -34,3 +34,11 @@
 - Validate data transformations
 - Test rate limiting and retry mechanisms
 - Ensure proper cleanup of test data
+
+## MCP Integration Guidelines
+
+- **Always use Supabase MCP** for database operations when available - Direct SQL execution, table management, and data queries
+- **Always use Square MCP** for Square API operations when available - Customer data, payments, appointments, and analytics
+- MCP tools provide better error handling and optimized performance compared to direct API calls
+- Leverage MCP pagination and rate limiting features for large datasets
+- Use MCP tools for complex data transformations and bulk operations
