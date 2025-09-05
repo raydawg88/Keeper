@@ -54,10 +54,13 @@ export class SquareOAuthManager {
         'PAYMENTS_READ', 
         'ORDERS_READ',
         'APPOINTMENTS_READ',
+        'APPOINTMENTS_ALL_READ',           // Access to all appointment data
+        'APPOINTMENTS_BUSINESS_SETTINGS_READ', // Business appointment settings
         'ITEMS_READ',
         'INVENTORY_READ',
         'EMPLOYEES_READ',
         'TIMECARDS_READ',
+        'TIMECARDS_SETTINGS_READ',        // Timecard settings for payroll
         'MERCHANT_PROFILE_READ',
         'BANK_ACCOUNTS_READ'
       ];
