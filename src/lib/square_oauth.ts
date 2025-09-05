@@ -14,6 +14,7 @@ interface AccountResult {
   business_name: string;
   merchant_id: string;
   locations: any[];
+  access_token?: string;
 }
 
 export class SquareOAuthManager {
@@ -109,24 +110,33 @@ export class SquareOAuthManager {
       });
       
       if (!tokenResponse.ok) {
-        throw new Error(`Token exchange failed: ${tokenResponse.statusText}`);
+        const errorBody = await tokenResponse.text();
+        console.error('Token exchange failed:', tokenResponse.status, tokenResponse.statusText);
+        console.error('Error body:', errorBody);
+        console.error('Token data sent:', JSON.stringify(tokenData, null, 2));
+        throw new Error(`Token exchange failed: ${tokenResponse.statusText} - ${errorBody}`);
       }
       
       const tokenResult = await tokenResponse.json();
       const accessToken = tokenResult.access_token;
       
-      // For now, skip merchant info retrieval and return success
-      // We'll implement merchant data fetching later once OAuth is working
-      const accountId = crypto.randomUUID();
-      
       console.log('OAuth callback successful! Access token received:', accessToken.substring(0, 10) + '...');
+      
+      // Get real merchant info from Square API
+      const merchantInfo = await this.getMerchantInfo(accessToken);
+      
+      if (!merchantInfo) {
+        throw new Error('Failed to get merchant information from Square API');
+      }
+      
+      const accountId = crypto.randomUUID();
       
       return {
         account_id: accountId,
-        business_name: 'Test Business (Sandbox)',
-        merchant_id: 'test_merchant_' + Date.now(),
-        locations: [{ name: 'Test Location' }],
-        access_token: accessToken // We'll store this securely later
+        business_name: merchantInfo.business_name,
+        merchant_id: merchantInfo.merchant_id,
+        locations: merchantInfo.locations,
+        access_token: accessToken
       };
       
     } catch (error) {
@@ -152,11 +162,13 @@ export class SquareOAuthManager {
       
       const merchantData = await merchantResponse.json();
       
-      if (!merchantData.merchants || merchantData.merchants.length === 0) {
+      // Handle both 'merchants' and 'merchant' response formats
+      const merchants = merchantData.merchants || merchantData.merchant;
+      if (!merchants || merchants.length === 0) {
         throw new Error('No merchant data found');
       }
       
-      const merchant = merchantData.merchants[0];
+      const merchant = merchants[0];
       
       // Get locations
       const locationsResponse = await fetch(`${this.apiBaseUrl}/v2/locations`, { headers });

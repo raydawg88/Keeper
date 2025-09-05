@@ -57,7 +57,8 @@ export async function GET(req: NextRequest) {
       account_id: result.account_id,
       business_name: result.business_name,
       merchant_id: result.merchant_id,
-      locations: result.locations
+      locations: result.locations,
+      access_token: result.access_token  // Temporarily expose for testing
     })
     
   } catch (error) {
