@@ -33,14 +33,62 @@ export default function Analytics() {
       setLoading(true);
       setError(null);
 
-      // Get total revenue and transaction count
-      const { data: transactions, error: transactionsError } = await supabase
-        .from('transactions')
-        .select('amount, created_at')
-        .order('created_at', { ascending: false });
+      // Get aggregated data using PostgreSQL functions (server-side calculation)
+      // This avoids the 1000 row limit and is much faster
+      const { data: aggregated, error: aggregatedError } = await supabase
+        .rpc('get_transaction_analytics');
 
-      if (transactionsError) {
-        throw transactionsError;
+      let totalRevenue = 0;
+      let totalTransactions = 0;
+      let avgTransaction = 0;
+
+      if (aggregatedError) {
+        console.log('RPC not available, using fallback calculation...');
+        
+        // Get exact count first
+        const { count: transactionCount, error: countError } = await supabase
+          .from('transactions')
+          .select('*', { count: 'exact', head: true });
+
+        if (countError) {
+          throw countError;
+        }
+
+        totalTransactions = transactionCount || 0;
+
+        // For revenue, we need to fetch all data in chunks to avoid limits
+        let currentRevenue = 0;
+        let offset = 0;
+        const chunkSize = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data: chunk, error: chunkError } = await supabase
+            .from('transactions')
+            .select('amount')
+            .range(offset, offset + chunkSize - 1);
+
+          if (chunkError) {
+            throw chunkError;
+          }
+
+          if (chunk && chunk.length > 0) {
+            currentRevenue += chunk.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+            offset += chunkSize;
+            hasMore = chunk.length === chunkSize;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        totalRevenue = currentRevenue;
+        avgTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+        
+      } else {
+        // Use RPC results
+        totalRevenue = aggregated?.total_revenue || 0;
+        totalTransactions = aggregated?.total_transactions || 0;
+        avgTransaction = aggregated?.avg_transaction || 0;
       }
 
       // Get customer count
@@ -52,7 +100,18 @@ export default function Analytics() {
         throw customersError;
       }
 
-      if (!transactions || transactions.length === 0) {
+      // Get transactions for trending (limit to recent data for performance)
+      const { data: transactions, error: transactionsError } = await supabase
+        .from('transactions')
+        .select('amount, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10000); // Get recent 10k for trending analysis
+
+      if (transactionsError) {
+        throw transactionsError;
+      }
+
+      if (totalTransactions === 0) {
         setData({
           totalRevenue: 0,
           totalTransactions: 0,
@@ -64,11 +123,6 @@ export default function Analytics() {
         });
         return;
       }
-
-      // Calculate totals
-      const totalRevenue = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
-      const totalTransactions = transactions.length;
-      const averageTransaction = totalRevenue / totalTransactions;
 
       // Group by year
       const yearlyData: { [key: number]: { revenue: number; transactions: number } } = {};
@@ -122,7 +176,7 @@ export default function Analytics() {
         totalRevenue,
         totalTransactions,
         totalCustomers: customerCount || 0,
-        averageTransaction,
+        averageTransaction: avgTransaction,
         yearlyRevenue,
         monthlyRevenue,
         recentTransactions
