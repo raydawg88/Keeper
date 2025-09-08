@@ -573,39 +573,65 @@ Respond in JSON format:
         return insights
     
     def generate_response_template(self, review: Review, analysis: ReviewAnalysis) -> str:
-        """Generate response template for review"""
+        """Generate AI-powered personalized review response"""
         try:
-            if analysis.sentiment_score >= 0:
-                # Positive response template
-                template = f"""Thank you so much for your {review.rating}-star review, {review.author}! """
-                
-                if analysis.entities.get('employees'):
-                    employee = analysis.entities['employees'][0]
-                    template += f"We're thrilled to hear that {employee} provided excellent service. "
-                
-                if analysis.entities.get('services'):
-                    service = analysis.entities['services'][0]
-                    template += f"We're glad you enjoyed your {service}. "
-                
-                template += "We appreciate your business and look forward to serving you again!"
-                
-            else:
-                # Negative response template
-                template = f"Thank you for your feedback, {review.author}. We sincerely apologize that your experience didn't meet expectations. "
-                
-                if 'staff_attitude' in analysis.issues:
-                    template += "We take customer service very seriously and will address this with our team immediately. "
-                
-                if 'cleanliness_issue' in analysis.issues:
-                    template += "We maintain high cleanliness standards and will review our procedures. "
-                
-                template += "Please contact us directly at [phone] so we can make this right. We value your business and hope to serve you better in the future."
+            # Import AI content generator
+            from ai_content_generator import AIContentGenerator, CustomerContext, BusinessContext, ContentRequest
             
-            return template
+            # Initialize AI generator (cached)
+            if not hasattr(self, '_ai_generator'):
+                self._ai_generator = AIContentGenerator()
+                self._business_context = BusinessContext(
+                    business_name="Bashful Beauty",
+                    business_type="spa",
+                    staff_names=["Jennifer", "Maria", "Lisa"],
+                    service_names=["Brazilian Wax", "Facial", "Body Wax"],
+                    average_service_price=85.0,
+                    location="Downtown",
+                    phone="555-BASHFUL",
+                    email="info@bashfulbeauty.com"
+                )
+            
+            # Create customer context from review
+            customer_context = CustomerContext(
+                customer_id=review.author,
+                name=review.author,
+                email="",
+                psychological_archetype="UNKNOWN",
+                psychological_state="STABLE"
+            )
+            
+            # Prepare review context for AI
+            review_context = f"{review.rating}-star review: {review.content}"
+            if analysis.entities.get('employees'):
+                review_context += f" (Mentioned staff: {', '.join(analysis.entities['employees'])})"
+            if analysis.entities.get('services'):
+                review_context += f" (Services: {', '.join(analysis.entities['services'])})"
+            if analysis.issues:
+                review_context += f" (Issues: {', '.join(analysis.issues)})"
+            
+            # Generate AI response
+            request = ContentRequest(
+                content_type='review_response',
+                customer_context=customer_context,
+                business_context=self._business_context,
+                additional_context=review_context,
+                max_length=200
+            )
+            
+            ai_response = self._ai_generator.generate_content(request)
+            
+            self.logger.info(f"Generated AI review response for {review.author}")
+            return ai_response
             
         except Exception as e:
-            self.logger.error(f"Response template generation failed: {str(e)}")
-            return "Thank you for your review. We appreciate your feedback and will use it to improve our service."
+            self.logger.error(f"AI review response generation failed: {str(e)}")
+            
+            # Fallback to simple template
+            if analysis.sentiment_score >= 0:
+                return f"Thank you so much for your {review.rating}-star review, {review.author}! We appreciate your business and look forward to serving you again!"
+            else:
+                return f"Thank you for your feedback, {review.author}. We sincerely apologize that your experience didn't meet expectations. Please contact us so we can make this right."
     
     def _get_business_info(self, account_id: str) -> Optional[Dict[str, Any]]:
         """Get business information for review scraping"""

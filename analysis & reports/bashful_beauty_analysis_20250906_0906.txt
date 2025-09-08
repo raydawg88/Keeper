@@ -1,0 +1,62 @@
+INFO:agents.mock_redis:MockRedis initialized for localhost:6379
+INFO:agents.mock_redis:MockRedis initialized for localhost:6379
+INFO:agents.mock_redis:MockRedis initialized for localhost:6379
+INFO:EmployeeAgent:Starting employee performance analysis for account b491de6e-7d5b-4e0e-b1cd-625c6c4f7d81
+INFO:agents.mock_redis:MockRedis PUBLISH agent_channel: unknown - analyzing_employees
+INFO:httpx:HTTP Request: GET https://jlawmbqoykwgrjutrfsp.supabase.co/rest/v1/transactions?select=%2A&account_id=eq.b491de6e-7d5b-4e0e-b1cd-625c6c4f7d81 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://jlawmbqoykwgrjutrfsp.supabase.co/rest/v1/appointments?select=%2A&account_id=eq.b491de6e-7d5b-4e0e-b1cd-625c6c4f7d81 "HTTP/2 200 OK"
+INFO:httpx:HTTP Request: GET https://jlawmbqoykwgrjutrfsp.supabase.co/rest/v1/customers?select=%2A&account_id=eq.b491de6e-7d5b-4e0e-b1cd-625c6c4f7d81 "HTTP/2 200 OK"
+INFO:EmployeeAgent:Loaded employee data for account b491de6e-7d5b-4e0e-b1cd-625c6c4f7d81: 1000 transactions, 1000 appointments, 1000 customers
+ERROR:EmployeeAgent:Error extracting employee IDs: 'employee_id'
+INFO:EmployeeAgent:Stored 0 employee analyses for account b491de6e-7d5b-4e0e-b1cd-625c6c4f7d81
+INFO:EmployeeAgent:Employee analysis completed: 0 insights generated
+🚀 KEEPER PHASE 1: PRODUCTION ANALYSIS
+============================================================
+🎯 Target: Generate $3000+ revenue opportunities
+📊 Dataset: 52,960 real appointments
+🤖 System: 8-agent tournament architecture
+⚡ Speed: 7x+ performance improvement
+
+🏢 Account: Bashful Beauty
+📋 ID: b491de6e-7d5b-4e0e-b1cd-625c6c4f7d81
+📊 Appointments: 52,960
+🔧 INITIALIZING PRODUCTION ANALYZER
+==================================================
+✅ Initialized 8 agents successfully
+
+🏆 EXECUTING 8-AGENT TOURNAMENT
+==================================================
+📊 Analyzing account: b491de6e-7d5b-4e0e-b1cd-625c6c4f7d81
+📅 Started at: 09:06:50
+🚀 Launching parallel agent execution...
+❌ DataAgent: 'DataAgent' object has no attribute 'get_data_summary'
+❌ MatchingAgent: MatchingAgent.match_customers() missing 1 required positional argument: 'external_file'
+❌ AnalysisAgent: 'AnalysisAgent' object has no attribute 'analyze_comprehensive'
+✅ EmployeeAgent: Success
+❌ ReviewAgent: 'ReviewAgent' object has no attribute 'analyze_reviews'
+❌ InsightAgent: 'InsightAgent' object has no attribute 'generate_insights'
+❌ NetworkLearningAgent: 'NetworkLearningAgent' object has no attribute 'apply_network_learning'
+❌ ReportAgent: 'ReportAgent' object has no attribute 'generate_executive_report'
+
+⏱️  Execution completed in 1.25s
+🚀 Speedup achieved: 56.2x
+✅ Agents succeeded: 1/8
+
+============================================================
+🎯 PHASE 1 PRODUCTION RESULTS
+============================================================
+⏱️  Execution Time: 1.25s
+🚀 Speedup Factor: 56.2x
+✅ Success Rate: 12.5%
+💰 Revenue Opportunities: $0.00
+🧠 Insights Generated: 0
+🎯 Average Confidence: 0.0%
+
+📊 REVENUE BREAKDOWN:
+------------------------------
+
+🎯 TOP INSIGHTS:
+------------------------------
+⚠️  Below target: $0.00 / $3,000
+
+🔧 PHASE 1 PARTIAL: System needs optimization

@@ -47,22 +47,29 @@ export class SquareOAuthManager {
       // In production, this would be stored in database
       const sessionId = crypto.randomUUID();
       
-      // Build authorization URL with READ-ONLY scopes for Keeper
-      // Keeper only needs to analyze data, not modify Square account
+      // Build authorization URL with COMPREHENSIVE READ-ONLY scopes for Keeper
+      // Full viewing access to all business data - NO WRITE permissions
+      // Keeper only analyzes data, never modifies anything in Square
       const keeperScopes = [
         'CUSTOMERS_READ',
         'PAYMENTS_READ', 
         'ORDERS_READ',
         'APPOINTMENTS_READ',
-        'APPOINTMENTS_ALL_READ',           // Access to all appointment data
-        'APPOINTMENTS_BUSINESS_SETTINGS_READ', // Business appointment settings
+        'APPOINTMENTS_ALL_READ',
+        'APPOINTMENTS_BUSINESS_SETTINGS_READ',
         'ITEMS_READ',
-        'INVENTORY_READ',
+        'INVENTORY_READ', 
         'EMPLOYEES_READ',
         'TIMECARDS_READ',
-        'TIMECARDS_SETTINGS_READ',        // Timecard settings for payroll
+        'TIMECARDS_SETTINGS_READ',
         'MERCHANT_PROFILE_READ',
-        'BANK_ACCOUNTS_READ'
+        'CASH_DRAWER_READ',
+        'INVOICES_READ',
+        'LOYALTY_READ',
+        'SUBSCRIPTIONS_READ',
+        'DISPUTES_READ',
+        'GIFTCARDS_READ',
+        'ONLINE_STORE_SITE_READ'
       ];
       
       const params = new URLSearchParams({
