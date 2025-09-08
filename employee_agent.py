@@ -311,18 +311,18 @@ class EmployeeAgent:
         insights = []
         employee_name = employee_metrics['employee_name']
         
-        # PROPORTIONAL INSIGHT THRESHOLDS:
-        # 0-10%: Similar performance (no action needed)
-        # 10-20%: Slight variation (monitor, small tweaks)
-        # 20-40%: Meaningful difference (coaching, process changes)
-        # 40%+: Significant gap (major interventions)
+        # CORRECTED PROPORTIONAL THRESHOLDS:
+        # <10%: Similar performance, both doing well
+        # 10-25%: Minor gap, monitor for patterns  
+        # 25-50%: Performance gap, consider coaching
+        # >50%: Significant issue, intervention needed
         
         # Revenue per hour insights - PROPORTIONAL
         if 'revenue_per_hour' in comparison:
             rph_comp = comparison['revenue_per_hour']
             diff_pct = abs(rph_comp['difference_pct'])
             
-            if diff_pct >= 40:  # SIGNIFICANT GAP
+            if diff_pct >= 50:  # SIGNIFICANT ISSUE
                 if rph_comp['difference_pct'] > 0:
                     insights.append({
                         'type': 'high_performer',
@@ -340,7 +340,7 @@ class EmployeeAgent:
                         'dollar_impact': lost_revenue,
                         'confidence': 0.88
                     })
-            elif diff_pct >= 20:  # MEANINGFUL DIFFERENCE
+            elif diff_pct >= 25:  # PERFORMANCE GAP
                 if rph_comp['difference_pct'] > 0:
                     insights.append({
                         'type': 'coaching_opportunity',
@@ -357,12 +357,12 @@ class EmployeeAgent:
                         'dollar_impact': (rph_comp['team_average'] - rph_comp['employee_value']) * 20 * 12,
                         'confidence': 0.72
                     })
-            elif diff_pct >= 10:  # SLIGHT VARIATION
+            elif diff_pct >= 10:  # MINOR GAP
                 if rph_comp['difference_pct'] > 0:
                     insights.append({
                         'type': 'minor_strength',
                         'pattern': f"{employee_name} performs slightly above average: ${rph_comp['employee_value']:.0f}/hour vs ${rph_comp['team_average']:.0f} ({rph_comp['difference_pct']:+.0f}%)",
-                        'action': f"Monitor trend - if consistent over 3 months, consider small rate increase",
+                        'action': f"Monitor for patterns - track over 2-3 months before action",
                         'dollar_impact': (rph_comp['employee_value'] - rph_comp['team_average']) * 10 * 12,
                         'confidence': 0.65
                     })
@@ -370,10 +370,18 @@ class EmployeeAgent:
                     insights.append({
                         'type': 'minor_gap',
                         'pattern': f"{employee_name} performs slightly below average: ${rph_comp['employee_value']:.0f}/hour vs ${rph_comp['team_average']:.0f} ({rph_comp['difference_pct']:+.0f}%)",
-                        'action': f"Watch closely - provide gentle coaching if trend continues over 2 months",
+                        'action': f"Monitor for patterns - gentle coaching if gap persists over 3 months",
                         'dollar_impact': (rph_comp['team_average'] - rph_comp['employee_value']) * 10 * 12,
                         'confidence': 0.62
                     })
+            else:  # SIMILAR PERFORMANCE (<10%)
+                insights.append({
+                    'type': 'similar_performance',
+                    'pattern': f"{employee_name} has similar revenue performance to team: ${rph_comp['employee_value']:.0f}/hour vs ${rph_comp['team_average']:.0f} ({rph_comp['difference_pct']:+.1f}%)",
+                    'action': f"Both doing well - maintain current performance and consistency",
+                    'dollar_impact': 0,  # No immediate action needed
+                    'confidence': 0.50
+                })
         
         # Client retention insights - PROPORTIONAL
         if 'client_retention' in comparison:
@@ -381,7 +389,7 @@ class EmployeeAgent:
             diff_pct = abs(retention_comp['difference_pct'])
             retention_value = retention_comp['employee_value']
             
-            if retention_value < 40 and diff_pct >= 30:  # CRITICAL RETENTION ISSUE
+            if retention_value < 40 and diff_pct >= 50:  # CRITICAL RETENTION ISSUE
                 estimated_monthly_revenue = employee_metrics['metrics']['revenue_per_hour'] * 160
                 retention_loss = estimated_monthly_revenue * 0.25 * 12
                 
@@ -392,7 +400,7 @@ class EmployeeAgent:
                     'dollar_impact': retention_loss,
                     'confidence': 0.88
                 })
-            elif diff_pct >= 20:  # MEANINGFUL RETENTION GAP
+            elif diff_pct >= 25:  # PERFORMANCE RETENTION GAP
                 if retention_comp['difference_pct'] > 0:
                     insights.append({
                         'type': 'retention_star',
@@ -417,7 +425,7 @@ class EmployeeAgent:
             tip_value = tip_comp['employee_value']
             
             # Only flag if tips are meaningfully different AND actually low
-            if tip_value < 15 and diff_pct >= 25:  # Low tips + significant gap
+            if tip_value < 15 and diff_pct >= 25:  # Low tips + performance gap
                 insights.append({
                     'type': 'service_quality_concern',
                     'pattern': f"{employee_name} receives low tips: {tip_value:.1f}% vs {tip_comp['team_average']:.1f}% average - indicates service quality issues",
@@ -425,7 +433,7 @@ class EmployeeAgent:
                     'dollar_impact': employee_metrics['metrics']['revenue_per_hour'] * 160 * 0.15,
                     'confidence': 0.70
                 })
-            elif diff_pct >= 30 and tip_comp['difference_pct'] > 0:  # Exceptionally high tips
+            elif diff_pct >= 50 and tip_comp['difference_pct'] > 0:  # Exceptionally high tips
                 insights.append({
                     'type': 'service_excellence',
                     'pattern': f"{employee_name} receives exceptional tips: {tip_value:.1f}% vs {tip_comp['team_average']:.1f}% average - clients love the service",
