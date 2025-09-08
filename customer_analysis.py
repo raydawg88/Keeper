@@ -23,9 +23,9 @@ except ImportError:
     import pandas as pd
     import numpy as np
 
-# Database configuration
-SUPABASE_URL = "https://jlawmbqoykwgrjutrfsp.supabase.co"
-SUPABASE_KEY = "sb_secret_6ONiuNr9OL53Wwf5G28wqA_WJrYbp50"
+# Database configuration - NEVER COMMIT SECRETS!
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 BASHFUL_BEAUTY_ACCOUNT_ID = "b491de6e-7d5b-4e0e-b1cd-625c6c4f7d81"
 
 class CustomerAnalyzer:
